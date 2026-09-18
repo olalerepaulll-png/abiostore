@@ -2,7 +2,8 @@ import React, { useMemo, useState } from "react";
 import {
   ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, Heart,
   Menu, Search, ShoppingBag, Sparkles, Star, Truck, User, X, Instagram,
-  MessageCircle, MapPin, Phone, Clock3, SlidersHorizontal
+  MessageCircle, MapPin, Phone, Clock3, SlidersHorizontal, Plus, Pencil,
+  Trash2, Package, LayoutDashboard, LogOut, Save
 } from "lucide-react";
 
 const brand = {
@@ -24,6 +25,24 @@ const products = [
 ];
 
 const format = n => "₦" + n.toLocaleString("en-NG");
+
+const PRODUCT_STORAGE_KEY = "abiostore_products_v1";
+const ADMIN_PIN = "2468";
+
+function loadProducts() {
+  try {
+    const saved = window.localStorage.getItem(PRODUCT_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : products;
+  } catch {
+    return products;
+  }
+}
+
+function persistProducts(next) {
+  try {
+    window.localStorage.setItem(PRODUCT_STORAGE_KEY, JSON.stringify(next));
+  } catch {}
+}
 
 function Logo({ onClick }) {
   return <button className="logo" onClick={onClick} aria-label="AbioStore home"><span>A</span>ABIOSTORE</button>;
