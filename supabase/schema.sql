@@ -32,8 +32,8 @@ alter table public.admins enable row level security;
 alter table public.products enable row level security;
 
 grant select on public.products to anon, authenticated;
-
-grant execute on function public.is_admin() to anon, authenticated;
+grant insert, update, delete on public.products to authenticated;
+grant usage, select on sequence public.products_id_seq to authenticated;
 
 create or replace function public.is_admin()
 returns boolean
@@ -47,6 +47,8 @@ as $$
     where user_id = auth.uid()
   );
 $$;
+
+grant execute on function public.is_admin() to anon, authenticated;
 
 drop policy if exists "Public can read products" on public.products;
 create policy "Public can read products"
@@ -125,4 +127,15 @@ select setval(
 
 
 -- Enable live catalogue updates for shoppers already on the site.
-alter publication supabase_realtime add table public.products;
+do $
+begin
+  if not exists (
+    select 1
+    from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'products'
+  ) then
+    alter publication supabase_realtime add table public.products;
+  end if;
+end $;
