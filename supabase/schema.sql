@@ -31,6 +31,10 @@ create index if not exists products_created_at_idx on public.products(created_at
 alter table public.admins enable row level security;
 alter table public.products enable row level security;
 
+grant select on public.products to anon, authenticated;
+
+grant execute on function public.is_admin() to anon, authenticated;
+
 create or replace function public.is_admin()
 returns boolean
 language sql
@@ -118,3 +122,7 @@ select setval(
   greatest((select coalesce(max(id), 1) from public.products), 1),
   true
 );
+
+
+-- Enable live catalogue updates for shoppers already on the site.
+alter publication supabase_realtime add table public.products;
