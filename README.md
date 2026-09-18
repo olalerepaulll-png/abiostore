@@ -29,26 +29,13 @@ npm run preview
 
 ## Configuration
 
-Almost everything business-specific lives in one place: `brandConfig` near the top of `src/App.jsx`.
-
-```js
-const brandConfig = {
-  brandName: "AbioStore",
-  whatsapp: "2349152910157",   // international format, no + or spaces
-  phone: "0915 291 0157",
-  address: "14 Akpakpava Road, Benin City, Edo State",
-  adminPin: "2468",            // change this before going live
-  ...
-};
-```
+Business contact details can be updated in the `brand` configuration object near the top of `src/App.jsx`. Admin authentication is handled by Supabase and is not hardcoded in the source code.
 
 - **Brand name / logo text**: change `brandName` — it's used everywhere (nav, footer, hero copy, order confirmations), so nothing needs to change elsewhere.
 - **WhatsApp number**: change `whatsapp` (digits only, country code first, no leading `0`).
-- **Admin PIN**: change `adminPin`. This is a lightweight owner-only gate for the demo, **not real authentication** — see Security below.
-
 ## Owner product management (Admin panel)
 
-Click **Store Admin** in the footer, enter the PIN (default `2468`), then:
+Click **Store Admin** in the footer and sign in with the owner email/password account created in Supabase, then:
 
 - **Add a product**: name, price, category, sizes, colors, description, stock, and upload one or more real photos from a phone or computer.
 - **Edit or delete** any existing product from the same screen.
@@ -74,7 +61,7 @@ Product management is now connected to **Supabase Postgres + Storage**. Products
    ```
 7. Redeploy Vercel.
 
-The owner now signs into **Store Admin** with the Supabase email/password account instead of the demo PIN. Only users listed in `public.admins` can create, edit, or delete products. Customers can read products without signing in. Product photos are uploaded to Supabase Storage rather than stored in browser localStorage.
+The owner signs into **Store Admin** with the Supabase email/password account. No admin password or PIN is stored in the repository. Only users listed in `public.admins` can create, edit, or delete products. Customers can read products without signing in. Product photos are uploaded to Supabase Storage rather than stored in browser localStorage.
 
 Supabase's React quickstart uses `@supabase/supabase-js` with Vite environment variables, and its Data API is protected with Row Level Security. citeturn0search1turn0search6
 
