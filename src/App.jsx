@@ -356,6 +356,7 @@ function Admin({ catalog, setCatalog, setPage }) {
         setCatalog(prev => editing ? prev.map(p => p.id === saved.id ? saved : p) : [saved, ...prev]);
         setEditing(saved.id);
         setForm(f => ({ ...f, image:saved.image, images:saved.images }));
+        setImageFiles([]);
       } else {
         const item = {
           id: editing || Date.now(),
