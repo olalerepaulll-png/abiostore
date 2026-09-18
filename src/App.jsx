@@ -187,6 +187,138 @@ function InfoPage({ type, setPage }) {
   return <main className="info-page page"><div className="info-copy"><p className="eyebrow">{data.ey}</p><h1>{data.title}</h1><p>{data.copy}</p><div className="contact-list"><div><MapPin/><span><b>Address</b>{brand.address}</span></div><div><Phone/><span><b>Phone</b>{brand.phone}</span></div><div><MessageCircle/><span><b>WhatsApp</b>Available daily</span></div><div><Clock3/><span><b>Hours</b>Mon – Sat · 9:00 – 18:00</span></div></div><a className="btn dark" href={"https://wa.me/"+brand.whatsapp} target="_blank" rel="noreferrer">Chat with Abio <MessageCircle size={17}/></a></div><div className="info-image"><img src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=1000&q=90" alt="AbioStore fashion"/></div></main>;
 }
 
+
+function Admin({ catalog, setCatalog, setPage }) {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [pin, setPin] = useState("");
+  const [error, setError] = useState("");
+  const [tab, setTab] = useState("dashboard");
+  const [editing, setEditing] = useState(null);
+  const empty = { name:"", price:"", oldPrice:"", category:"Women", sizes:"S, M, L", color:"Black", description:"", stock:"10", tag:"", image:"" };
+  const [form, setForm] = useState(empty);
+
+  const save = next => {
+    setCatalog(next);
+    persistProducts(next);
+  };
+
+  const login = e => {
+    e.preventDefault();
+    if (pin === ADMIN_PIN) { setLoggedIn(true); setError(""); }
+    else setError("Incorrect PIN.");
+  };
+
+  const edit = p => {
+    setEditing(p.id);
+    setForm({
+      name:p.name || "", price:p.price || "", oldPrice:p.oldPrice || "",
+      category:p.category || "Women", sizes:(p.sizes || []).join(", "),
+      color:p.color || "", description:p.desc || "", stock:p.stock ?? 0,
+      tag:p.tag || "", image:p.image || ""
+    });
+    setTab("products");
+  };
+
+  const photo = e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setForm(f => ({...f, image:reader.result}));
+    reader.readAsDataURL(file);
+  };
+
+  const submit = e => {
+    e.preventDefault();
+    const item = {
+      id: editing || Date.now(),
+      name: form.name.trim(),
+      category: form.category,
+      price: Number(form.price) || 0,
+      ...(form.oldPrice ? {oldPrice:Number(form.oldPrice)} : {}),
+      tag: form.tag.trim(),
+      color: form.color.trim(),
+      sizes: form.sizes.split(",").map(x=>x.trim()).filter(Boolean),
+      image: form.image || "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=900&q=85",
+      desc: form.description.trim(),
+      stock: Math.max(0, Number(form.stock) || 0)
+    };
+    save(editing ? catalog.map(p=>p.id===editing ? item : p) : [item, ...catalog]);
+    setEditing(item.id);
+    setForm({...form, image:item.image});
+  };
+
+  const remove = id => {
+    const item = catalog.find(p=>p.id===id);
+    if (!item || !window.confirm("Delete " + item.name + "?")) return;
+    save(catalog.filter(p=>p.id!==id));
+    if (editing === id) { setEditing(null); setForm(empty); }
+  };
+
+  if (!loggedIn) return <main className="admin-login">
+    <div className="admin-login-card">
+      <button className="admin-back" onClick={()=>setPage("home")}><ChevronLeft size={17}/> Back to store</button>
+      <div className="admin-mark"><span>A</span></div>
+      <p className="eyebrow">Owner access</p>
+      <h1>Store <em>Admin.</em></h1>
+      <p>Manage products, pricing, stock and real product photos.</p>
+      <form onSubmit={login}>
+        <label>Owner PIN</label>
+        <input autoFocus type="password" inputMode="numeric" maxLength="8" value={pin} onChange={e=>setPin(e.target.value)} placeholder="Enter PIN"/>
+        {error && <small className="admin-error">{error}</small>}
+        <button className="btn dark wide" type="submit">Enter admin <ArrowRight size={17}/></button>
+      </form>
+      <div className="admin-demo-note">Default PIN: <b>2468</b></div>
+    </div>
+  </main>;
+
+  return <main className="admin-shell">
+    <aside className="admin-sidebar">
+      <div className="admin-brand"><div className="admin-mark small"><span>A</span></div><b>ABIOSTORE</b><small>OWNER PANEL</small></div>
+      <button className={tab==="dashboard"?"admin-nav active":"admin-nav"} onClick={()=>setTab("dashboard")}><LayoutDashboard size={17}/> Dashboard</button>
+      <button className={tab==="products"?"admin-nav active":"admin-nav"} onClick={()=>setTab("products")}><Package size={17}/> Products</button>
+      <div className="admin-side-note"><b>Product management</b><span>Add photos, edit details and keep stock current.</span></div>
+      <button className="admin-nav admin-logout" onClick={()=>setLoggedIn(false)}><LogOut size={17}/> Lock panel</button>
+    </aside>
+    <section className="admin-main">
+      <header className="admin-topbar">
+        <div><p className="eyebrow">AbioStore / Owner</p><h1>{tab==="dashboard"?"Good morning.":editing?"Edit product.":"Add a product."}</h1></div>
+        <div className="admin-top-actions"><button className="btn outline" onClick={()=>setPage("home")}>View store</button>{tab==="products"&&<button className="btn dark" onClick={()=>{setEditing(null);setForm(empty)}}><Plus size={16}/> New product</button>}</div>
+      </header>
+
+      {tab==="dashboard" && <div className="admin-dashboard">
+        <div className="admin-stat"><span>Products</span><b>{catalog.length}</b><small>In catalogue</small></div>
+        <div className="admin-stat"><span>In stock</span><b>{catalog.filter(p=>(p.stock??0)>0).length}</b><small>Available products</small></div>
+        <div className="admin-stat"><span>Low stock</span><b>{catalog.filter(p=>(p.stock??0)<=5).length}</b><small>5 units or fewer</small></div>
+        <div className="admin-stat"><span>Categories</span><b>{new Set(catalog.map(p=>p.category)).size}</b><small>Women, men & children</small></div>
+        <div className="admin-section-head"><div><p className="eyebrow">Catalogue</p><h2>Products</h2></div><button className="text-btn" onClick={()=>setTab("products")}>Manage products <ArrowRight size={15}/></button></div>
+        <div className="admin-product-list">{catalog.slice(0,8).map(p=><div className="admin-product-row" key={p.id}>
+          <img src={p.image} alt=""/><div><b>{p.name}</b><span>{p.category}</span></div><strong>{format(p.price)}</strong><span className={(p.stock??0)<=5?"stock low":"stock"}>{p.stock??0} stock</span><button onClick={()=>edit(p)}><Pencil size={16}/></button>
+        </div>)}</div>
+      </div>}
+
+      {tab==="products" && <div className="admin-products">
+        <div className="admin-form-card">
+          <div className="admin-form-title"><div><p className="eyebrow">Owner product management</p><h2>{editing?"Update product":"Add a product"}</h2></div></div>
+          <form onSubmit={submit}>
+            <div className="admin-fields two"><label>Name<input required value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Aurelia Satin Dress"/></label><label>Category<select value={form.category} onChange={e=>setForm({...form,category:e.target.value})}><option>Women</option><option>Men</option><option>Children</option></select></label></div>
+            <div className="admin-fields three"><label>Price (₦)<input required type="number" min="0" value={form.price} onChange={e=>setForm({...form,price:e.target.value})}/></label><label>Old price (₦)<input type="number" min="0" value={form.oldPrice} onChange={e=>setForm({...form,oldPrice:e.target.value})}/></label><label>Stock<input type="number" min="0" value={form.stock} onChange={e=>setForm({...form,stock:e.target.value})}/></label></div>
+            <div className="admin-fields two"><label>Sizes<input value={form.sizes} onChange={e=>setForm({...form,sizes:e.target.value})} placeholder="S, M, L, XL"/></label><label>Colors<input value={form.color} onChange={e=>setForm({...form,color:e.target.value})} placeholder="Black"/></label></div>
+            <div className="admin-fields two"><label>Tag<input value={form.tag} onChange={e=>setForm({...form,tag:e.target.value})} placeholder="New / Bestseller"/></label><label>Image URL<input value={form.image.startsWith("http")?form.image:""} onChange={e=>setForm({...form,image:e.target.value})} placeholder="Optional"/></label></div>
+            <label className="admin-label">Description<textarea required value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Describe the product..."/></label>
+            <label className="upload-box"><input type="file" accept="image/*" onChange={photo}/><span><Plus size={22}/><b>Upload a real product photo</b><small>From your phone or computer</small></span></label>
+            {form.image && <div className="admin-photo-preview"><img src={form.image} alt="Product preview"/></div>}
+            <div className="admin-form-actions"><button className="btn dark" type="submit"><Save size={16}/>{editing?"Save changes":"Add product"}</button>{editing&&<button type="button" className="btn danger" onClick={()=>remove(editing)}><Trash2 size={16}/> Delete product</button>}</div>
+          </form>
+        </div>
+        <div className="admin-catalog-card"><div className="admin-form-title"><div><p className="eyebrow">Current catalogue</p><h2>{catalog.length} products</h2></div></div>
+          {catalog.map(p=><div className="admin-product-row compact" key={p.id}><img src={p.image} alt=""/><div><b>{p.name}</b><span>{p.category} · {format(p.price)}</span></div><span className="stock">{p.stock??0}</span><button onClick={()=>edit(p)}><Pencil size={15}/></button><button onClick={()=>remove(p.id)}><Trash2 size={15}/></button></div>)}
+        </div>
+      </div>}
+      <p className="admin-storage-note">Products are saved in this browser using local storage. For permanent shared data across devices, connect a real database/storage service.</p>
+    </section>
+  </main>;
+}
+
 export default function App() {
   const [page,setPage]=useState("home");
   const [selected,setSelected]=useState(null);
