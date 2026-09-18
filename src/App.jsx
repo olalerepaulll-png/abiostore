@@ -27,7 +27,6 @@ const products = [
 
 const format = n => "₦" + n.toLocaleString("en-NG");
 
-const ADMIN_PIN = "2468"; // Local fallback only when Supabase is not configured.
 
 function dbToProduct(row) {
   return {
@@ -241,7 +240,6 @@ function Admin({ catalog, setCatalog, setPage }) {
   const [checkingAuth, setCheckingAuth] = useState(isSupabaseConfigured);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [pin, setPin] = useState("");
   const [error, setError] = useState("");
   const [tab, setTab] = useState("dashboard");
   const [editing, setEditing] = useState(null);
@@ -315,8 +313,7 @@ function Admin({ catalog, setCatalog, setPage }) {
     e.preventDefault();
     setError("");
     if (!isSupabaseConfigured) {
-      if (pin === ADMIN_PIN) setLoggedIn(true);
-      else setError("Incorrect demo PIN.");
+      setError("Admin access requires Supabase to be configured.");
       return;
     }
     setSaving(true);
@@ -406,7 +403,6 @@ function Admin({ catalog, setCatalog, setPage }) {
     setLoggedIn(false);
     setEmail("");
     setPassword("");
-    setPin("");
   };
 
   if (checkingAuth) return <main className="admin-login"><div className="admin-login-card"><p className="eyebrow">Owner access</p><h1>Checking <em>access.</em></h1><p>Verifying your AbioStore owner account…</p></div></main>;
@@ -417,21 +413,16 @@ function Admin({ catalog, setCatalog, setPage }) {
       <div className="admin-mark"><span>A</span></div>
       <p className="eyebrow">Owner access</p>
       <h1>Store <em>Admin.</em></h1>
-      <p>{isSupabaseConfigured ? "Sign in with the owner account you created in Supabase." : "Supabase is not configured yet, so the temporary local admin gate is active."}</p>
+      <p>Sign in with the owner account you created in Supabase.</p>
       <form onSubmit={login}>
-        {isSupabaseConfigured ? <>
-          <label>Email address</label>
-          <input autoFocus type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="owner@example.com"/>
-          <label>Password</label>
-          <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Your password"/>
-        </> : <>
-          <label>Temporary owner PIN</label>
-          <input autoFocus type="password" inputMode="numeric" maxLength="8" value={pin} onChange={e=>setPin(e.target.value)} placeholder="Enter PIN"/>
-        </>}
+        <label>Email address</label>
+        <input autoFocus type="email" required value={email} onChange={e=>setEmail(e.target.value)} placeholder="owner@example.com"/>
+        <label>Password</label>
+        <input type="password" required value={password} onChange={e=>setPassword(e.target.value)} placeholder="Your password"/>
         {error && <small className="admin-error">{error}</small>}
         <button className="btn dark wide" type="submit" disabled={saving}>{saving ? "Signing in…" : "Enter admin"} <ArrowRight size={17}/></button>
       </form>
-      {!isSupabaseConfigured && <div className="admin-demo-note">Temporary PIN: <b>2468</b> · connect Supabase before launch</div>}
+}
     </div>
   </main>;
 
