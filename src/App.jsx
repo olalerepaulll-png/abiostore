@@ -89,8 +89,8 @@ function Header({ page, setPage, cartCount, wishlistCount, onSearch, onCart }) {
   </header>;
 }
 
-function Home({ setPage, onOpen }) {
-  const featured = products.slice(0,4);
+function Home({ setPage, onOpen, catalog }) {
+  const featured = catalog.slice(0,4);
   return <main>
     <section className="hero">
       <div className="hero-copy">
@@ -126,12 +126,12 @@ function Home({ setPage, onOpen }) {
   </main>;
 }
 
-function Shop({ category="All", setPage, onOpen, wishlist, onLike, onAdd }) {
+function Shop({ category="All", setPage, onOpen, wishlist, onLike, onAdd, catalog }) {
   const [active, setActive] = useState(category === "All" ? "All" : category);
   const [sort, setSort] = useState("Featured");
   const [filterOpen, setFilterOpen] = useState(false);
   const filtered = useMemo(() => {
-    let list = active === "All" ? [...products] : products.filter(p => p.category === active);
+    let list = active === "All" ? [...catalog] : catalog.filter(p => p.category === active);
     if (sort === "Price: Low") list.sort((a,b)=>a.price-b.price);
     if (sort === "Price: High") list.sort((a,b)=>b.price-a.price);
     return list;
@@ -168,9 +168,9 @@ function Drawer({ cart, onClose, onRemove, onCheckout }) {
   return <div className="overlay"><aside className="drawer"><div className="drawer-head"><h2>Your bag <span>{cart.reduce((s,i)=>s+i.qty,0)}</span></h2><button onClick={onClose}><X/></button></div>{cart.length===0?<div className="empty"><ShoppingBag size={38}/><h3>Your bag is waiting.</h3><p>Add something beautiful to get started.</p></div>:<><div className="drawer-items">{cart.map(i=><div className="cart-item" key={i.product.id+i.size}><img src={i.product.image} alt=""/><div><p className="eyebrow">{i.product.category}</p><h4>{i.product.name}</h4><small>Size {i.size} · Qty {i.qty}</small><strong>{format(i.product.price*i.qty)}</strong><button onClick={()=>onRemove(i.product.id,i.size)}>Remove</button></div></div>)}</div><div className="drawer-footer"><div><span>Subtotal</span><strong>{format(total)}</strong></div><small>Delivery calculated at checkout.</small><button className="btn dark wide" onClick={onCheckout}>Checkout <ArrowRight size={17}/></button><a className="whatsapp-link" href={"https://wa.me/"+brand.whatsapp+"?text="+encodeURIComponent("Hello AbioStore, I'd like to order from my bag.")} target="_blank" rel="noreferrer"><MessageCircle size={16}/> Order via WhatsApp</a></div></>}</aside></div>;
 }
 
-function SearchOverlay({ onClose, onOpen }) {
+function SearchOverlay({ onClose, onOpen, catalog }) {
   const [q,setQ]=useState("");
-  const results=products.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())||p.category.toLowerCase().includes(q.toLowerCase()));
+  const results=catalog.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())||p.category.toLowerCase().includes(q.toLowerCase()));
   return <div className="overlay search-overlay"><div className="search-box"><div className="search-head"><p className="eyebrow">Search AbioStore</p><button onClick={onClose}><X/></button></div><div className="search-input"><Search/><input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder="Try “satin”, “men”, “dress”..." /></div><div className="search-results">{q ? results.map(p=><button key={p.id} onClick={()=>{onOpen(p);onClose()}}><img src={p.image} alt=""/><span><b>{p.name}</b><small>{p.category} · {format(p.price)}</small></span><ArrowRight size={16}/></button>) : <p className="search-hint">Search our women’s, men’s and children’s collections.</p>}</div></div></div>;
 }
 
@@ -324,6 +324,7 @@ export default function App() {
   const [selected,setSelected]=useState(null);
   const [cart,setCart]=useState([]);
   const [wishlist,setWishlist]=useState([]);
+  const [catalog,setCatalog]=useState(loadProducts);
   const [drawer,setDrawer]=useState(false);
   const [search,setSearch]=useState(false);
   const openProduct=p=>{setSelected(p);setPage("product");window.scrollTo(0,0)};
@@ -331,14 +332,15 @@ export default function App() {
   const toggleLike=id=>setWishlist(w=>w.includes(id)?w.filter(x=>x!==id):[...w,id]);
   const remove=(id,size)=>setCart(c=>c.filter(i=>!(i.product.id===id&&i.size===size)));
   const render=()=>{
-    if(page==="home") return <Home setPage={setPage} onOpen={openProduct}/>;
-    if(page==="shop"||["women","men","children"].includes(page)) return <Shop category={page==="shop"?"All":page[0].toUpperCase()+page.slice(1)} setPage={setPage} onOpen={openProduct} wishlist={wishlist} onLike={toggleLike} onAdd={addToCart}/>;
+    if(page==="home") return <Home setPage={setPage} onOpen={openProduct} catalog={catalog}/>;
+    if(page==="shop"||["women","men","children"].includes(page)) return <Shop category={page==="shop"?"All":page[0].toUpperCase()+page.slice(1)} setPage={setPage} onOpen={openProduct} wishlist={wishlist} onLike={toggleLike} onAdd={addToCart} catalog={catalog}/>;
     if(page==="product"&&selected) return <ProductDetail product={selected} onBack={()=>setPage("shop")} onAdd={addToCart} liked={wishlist.includes(selected.id)} onLike={toggleLike}/>;
-    if(page==="wishlist") return <main className="page"><div className="shop-hero compact"><p className="eyebrow">Saved for later</p><h1>Your <em>wishlist.</em></h1></div>{wishlist.length?<div className="product-grid shop-grid">{products.filter(p=>wishlist.includes(p.id)).map(p=><ProductCard key={p.id} product={p} liked onLike={toggleLike} onOpen={openProduct} onAdd={addToCart}/>)}</div>:<div className="empty-page"><Heart size={38}/><h2>Nothing saved yet.</h2><p>Tap the heart on anything you love and it will live here.</p><button className="btn dark" onClick={()=>setPage("shop")}>Explore collection</button></div>}</main>;
+    if(page==="wishlist") return <main className="page"><div className="shop-hero compact"><p className="eyebrow">Saved for later</p><h1>Your <em>wishlist.</em></h1></div>{wishlist.length?<div className="product-grid shop-grid">{catalog.filter(p=>wishlist.includes(p.id)).map(p=><ProductCard key={p.id} product={p} liked onLike={toggleLike} onOpen={openProduct} onAdd={addToCart}/>)}</div>:<div className="empty-page"><Heart size={38}/><h2>Nothing saved yet.</h2><p>Tap the heart on anything you love and it will live here.</p><button className="btn dark" onClick={()=>setPage("shop")}>Explore collection</button></div>}</main>;
     if(page==="checkout") return <Checkout cart={cart} setPage={setPage} onDone={()=>{}}/>;
     if(page==="about"||page==="store") return <InfoPage type={page} setPage={setPage}/>;
-    if(page==="lookbook") return <main className="lookbook page"><div className="shop-hero compact"><p className="eyebrow">Spring / Summer 2026</p><h1>The <em>Abio</em> lookbook.</h1></div><div className="look-grid">{products.slice(0,6).map((p,i)=><button key={p.id} className={"look-card look-"+i} onClick={()=>openProduct(p)}><img src={p.image} alt={p.name}/><span>{p.name} <ArrowUpRight size={15}/></span></button>)}</div></main>;
+    if(page==="lookbook") return <main className="lookbook page"><div className="shop-hero compact"><p className="eyebrow">Spring / Summer 2026</p><h1>The <em>Abio</em> lookbook.</h1></div><div className="look-grid">{catalog.slice(0,6).map((p,i)=><button key={p.id} className={"look-card look-"+i} onClick={()=>openProduct(p)}><img src={p.image} alt={p.name}/><span>{p.name} <ArrowUpRight size={15}/></span></button>)}</div></main>;
     return null;
   };
-  return <><Header page={page} setPage={setPage} cartCount={cart.reduce((s,i)=>s+i.qty,0)} wishlistCount={wishlist.length} onSearch={()=>setSearch(true)} onCart={()=>setDrawer(true)}/>{render()}<footer className="footer"><div><Logo onClick={()=>setPage("home")}/><p>Modern fashion, thoughtfully chosen.<br/>Benin City, Edo State.</p></div><div className="footer-links"><div><b>Explore</b><button onClick={()=>setPage("shop")}>Shop</button><button onClick={()=>setPage("lookbook")}>Lookbook</button><button onClick={()=>setPage("about")}>Our story</button></div><div><b>Help</b><button onClick={()=>setPage("store")}>Visit store</button><a href={"https://wa.me/"+brand.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a><a href={"tel:"+brand.phone.replace(/\s/g,"")}>Call us</a></div></div><div className="footer-bottom"><span>© 2026 AbioStore. All rights reserved.</span><span>Made in Edo · <Instagram size={14}/></span></div></footer>{drawer&&<Drawer cart={cart} onClose={()=>setDrawer(false)} onRemove={remove} onCheckout={()=>{setDrawer(false);setPage("checkout")}}/>}{search&&<SearchOverlay onClose={()=>setSearch(false)} onOpen={openProduct}/>}</>;
+  if(page==="admin") return <Admin catalog={catalog} setCatalog={setCatalog} setPage={setPage}/>;
+  return <><Header page={page} setPage={setPage} cartCount={cart.reduce((s,i)=>s+i.qty,0)} wishlistCount={wishlist.length} onSearch={()=>setSearch(true)} onCart={()=>setDrawer(true)}/>{render()}<footer className="footer"><div><Logo onClick={()=>setPage("home")}/><p>Modern fashion, thoughtfully chosen.<br/>Benin City, Edo State.</p></div><div className="footer-links"><div><b>Explore</b><button onClick={()=>setPage("shop")}>Shop</button><button onClick={()=>setPage("lookbook")}>Lookbook</button><button onClick={()=>setPage("about")}>Our story</button></div><div><b>Help</b><button onClick={()=>setPage("store")}>Visit store</button><button onClick={()=>setPage("admin")}>Store Admin</button><a href={"https://wa.me/"+brand.whatsapp} target="_blank" rel="noreferrer">WhatsApp</a><a href={"tel:"+brand.phone.replace(/\s/g,"")}>Call us</a></div></div><div className="footer-bottom"><span>© 2026 AbioStore. All rights reserved.</span><span>Made in Edo · <Instagram size={14}/></span></div></footer>{drawer&&<Drawer cart={cart} onClose={()=>setDrawer(false)} onRemove={remove} onCheckout={()=>{setDrawer(false);setPage("checkout")}}/>}{search&&<SearchOverlay onClose={()=>setSearch(false)} onOpen={openProduct} catalog={catalog}/>}</>;
 }
