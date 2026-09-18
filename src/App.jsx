@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from "react";
 import {
-  ArrowRight, Bag, Check, ChevronDown, ChevronLeft, ChevronRight, Heart,
+  ArrowRight, ArrowUpRight, Check, ChevronDown, ChevronLeft, Heart,
   Menu, Search, ShoppingBag, Sparkles, Star, Truck, User, X, Instagram,
   MessageCircle, MapPin, Phone, Clock3, SlidersHorizontal
 } from "lucide-react";
