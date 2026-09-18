@@ -194,7 +194,7 @@ function Admin({ catalog, setCatalog, setPage }) {
   const [error, setError] = useState("");
   const [tab, setTab] = useState("dashboard");
   const [editing, setEditing] = useState(null);
-  const empty = { name:"", price:"", oldPrice:"", category:"Women", sizes:"S, M, L", color:"Black", description:"", stock:"10", tag:"", image:"" };
+  const empty = { name:"", price:"", oldPrice:"", category:"Women", sizes:"S, M, L", color:"Black", description:"", stock:"10", tag:"", image:"", images:[] };
   const [form, setForm] = useState(empty);
 
   const save = next => {
@@ -220,11 +220,17 @@ function Admin({ catalog, setCatalog, setPage }) {
   };
 
   const photo = e => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => setForm(f => ({...f, image:reader.result}));
-    reader.readAsDataURL(file);
+    const files = Array.from(e.target.files || []).slice(0, 5);
+    if (!files.length) return;
+    Promise.all(files.map(file => new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(file);
+    }))).then(images => setForm(f => ({
+      ...f,
+      images:[...(f.images || []), ...images].slice(0, 5),
+      image:f.image || images[0]
+    })));
   };
 
   const submit = e => {
@@ -238,13 +244,14 @@ function Admin({ catalog, setCatalog, setPage }) {
       tag: form.tag.trim(),
       color: form.color.trim(),
       sizes: form.sizes.split(",").map(x=>x.trim()).filter(Boolean),
-      image: form.image || "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=900&q=85",
+      image: form.image || form.images?.[0] || "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=900&q=85",
+      images: form.images || [],
       desc: form.description.trim(),
       stock: Math.max(0, Number(form.stock) || 0)
     };
     save(editing ? catalog.map(p=>p.id===editing ? item : p) : [item, ...catalog]);
     setEditing(item.id);
-    setForm({...form, image:item.image});
+    setForm({...form, image:item.image, images:item.images || [item.image]});
   };
 
   const remove = id => {
@@ -305,8 +312,8 @@ function Admin({ catalog, setCatalog, setPage }) {
             <div className="admin-fields two"><label>Sizes<input value={form.sizes} onChange={e=>setForm({...form,sizes:e.target.value})} placeholder="S, M, L, XL"/></label><label>Colors<input value={form.color} onChange={e=>setForm({...form,color:e.target.value})} placeholder="Black"/></label></div>
             <div className="admin-fields two"><label>Tag<input value={form.tag} onChange={e=>setForm({...form,tag:e.target.value})} placeholder="New / Bestseller"/></label><label>Image URL<input value={form.image.startsWith("http")?form.image:""} onChange={e=>setForm({...form,image:e.target.value})} placeholder="Optional"/></label></div>
             <label className="admin-label">Description<textarea required value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="Describe the product..."/></label>
-            <label className="upload-box"><input type="file" accept="image/*" onChange={photo}/><span><Plus size={22}/><b>Upload a real product photo</b><small>From your phone or computer</small></span></label>
-            {form.image && <div className="admin-photo-preview"><img src={form.image} alt="Product preview"/></div>}
+            <label className="upload-box"><input type="file" accept="image/*" multiple onChange={photo}/><span><Plus size={22}/><b>Upload one or more real photos</b><small>From your phone or computer · up to 5 photos</small></span></label>
+            {form.images?.length > 0 && <div className="admin-photo-grid">{form.images.map((src,i)=><div key={i}><img src={src} alt={"Product photo "+(i+1)}/><button type="button" onClick={()=>setForm(f=>{const images=f.images.filter((_,idx)=>idx!==i);return {...f,images,image:images[0]||""};})}><Trash2 size={13}/></button></div>)}</div>}
             <div className="admin-form-actions"><button className="btn dark" type="submit"><Save size={16}/>{editing?"Save changes":"Add product"}</button>{editing&&<button type="button" className="btn danger" onClick={()=>remove(editing)}><Trash2 size={16}/> Delete product</button>}</div>
           </form>
         </div>
