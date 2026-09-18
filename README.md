@@ -53,7 +53,30 @@ Click **Store Admin** in the footer, enter the PIN (default `2468`), then:
 - **Add a product**: name, price, category, sizes, colors, description, stock, and upload one or more real photos from a phone or computer.
 - **Edit or delete** any existing product from the same screen.
 
-On the Vercel storefront, product changes are saved in the browser's `localStorage`, so the same browser can keep products after a refresh. This is browser-local persistence, not a shared database: changes are not automatically available on another phone, computer, or customer browser. For permanent shared owner data across devices, connect a real database and image storage service.
+Product management is now connected to **Supabase Postgres + Storage**. Products are stored centrally, so a product added from the owner panel is available to every customer device. The storefront also subscribes to Supabase Realtime product changes, so customers who already have the shop open can receive catalogue updates without a refresh.
+
+### Supabase setup
+
+1. Create a Supabase project.
+2. Open **SQL Editor** and run the complete `supabase/schema.sql` file. It creates the products table, Row Level Security policies, the public `product-images` storage bucket, image policies, starter products, and Realtime support.
+3. In Supabase **Authentication → Users**, create the owner's email/password account.
+4. Copy that user's UUID. In SQL Editor, run:
+   ```sql
+   insert into public.admins (user_id)
+   values ('PASTE_OWNER_USER_UUID_HERE')
+   on conflict (user_id) do nothing;
+   ```
+5. In Supabase **Project Settings → API**, copy the Project URL and **Publishable key**.
+6. Add these variables to Vercel for **Production** (and Preview if you use it):
+   ```text
+   VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+   VITE_SUPABASE_PUBLISHABLE_KEY=YOUR_SUPABASE_PUBLISHABLE_KEY
+   ```
+7. Redeploy Vercel.
+
+The owner now signs into **Store Admin** with the Supabase email/password account instead of the demo PIN. Only users listed in `public.admins` can create, edit, or delete products. Customers can read products without signing in. Product photos are uploaded to Supabase Storage rather than stored in browser localStorage.
+
+Supabase's React quickstart uses `@supabase/supabase-js` with Vite environment variables, and its Data API is protected with Row Level Security. citeturn0search1turn0search6
 
 ## Payment integration points
 
@@ -65,9 +88,9 @@ The checkout UI already has the provider selection built (Paystack, Flutterwave,
 
 ## Remaining limitations / recommended next steps
 
-1. **Backend & shared persistence**: the owner panel currently persists products in browser localStorage. For production, add a real backend/database and image storage so products, orders, and inventory are shared across devices.
-2. **Real authentication for Admin**: the current PIN gate (default `2468`) is a demo owner gate. Replace it with real authentication before launch because a frontend PIN is not secure.
-3. **Real product photography**: replace the generated placeholder images by uploading real photos through the Admin panel, or by editing the seed data in `SEED_PRODUCTS`.
+1. **Orders & inventory backend**: products now use Supabase, but checkout/order records are still UI-only. Add `orders`, `order_items`, and inventory transactions before launch.
+2. **Payment provider wiring**: Paystack/Flutterwave still need real server-side payment verification.
+3. **Real product photography**: upload the store's real photos through the Admin panel. Supabase Storage keeps those files shared across devices.
 4. **Payment provider wiring**: see above.
 5. **Order tracking**: currently shows a static demo timeline; connect it to real order status once a backend exists.
 6. **SEO/multi-page routing**: this app uses client-side view-switching rather than real URLs/routes. For full SEO (indexable `/products/[slug]` etc.), consider migrating to Next.js with this UI as a starting point.
