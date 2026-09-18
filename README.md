@@ -53,7 +53,7 @@ Click **Store Admin** in the footer, enter the PIN (default `2468`), then:
 - **Add a product**: name, price, category, sizes, colors, description, stock, and upload one or more real photos from a phone or computer.
 - **Edit or delete** any existing product from the same screen.
 
-Products persist via the app's key-value storage when run inside a Claude artifact. **When deployed outside Claude** (Vercel, Netlify, your own server, etc.), `window.storage` won't exist, so the admin panel will still work during a browsing session but changes won't be saved after a page refresh — see "Next steps" below for wiring up real persistence.
+On the Vercel storefront, product changes are saved in the browser's `localStorage`, so the same browser can keep products after a refresh. This is browser-local persistence, not a shared database: changes are not automatically available on another phone, computer, or customer browser. For permanent shared owner data across devices, connect a real database and image storage service.
 
 ## Payment integration points
 
@@ -65,8 +65,8 @@ The checkout UI already has the provider selection built (Paystack, Flutterwave,
 
 ## Remaining limitations / recommended next steps
 
-1. **Backend & real persistence**: this is a front-end-only app. For a production store, add a real backend (or a service like Supabase/Firebase) for orders, inventory, and product storage so nothing depends on browser/session state.
-2. **Real authentication for Admin**: replace the PIN gate with real login before launch.
+1. **Backend & shared persistence**: the owner panel currently persists products in browser localStorage. For production, add a real backend/database and image storage so products, orders, and inventory are shared across devices.
+2. **Real authentication for Admin**: the current PIN gate (default `2468`) is a demo owner gate. Replace it with real authentication before launch because a frontend PIN is not secure.
 3. **Real product photography**: replace the generated placeholder images by uploading real photos through the Admin panel, or by editing the seed data in `SEED_PRODUCTS`.
 4. **Payment provider wiring**: see above.
 5. **Order tracking**: currently shows a static demo timeline; connect it to real order status once a backend exists.
